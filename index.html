@@ -1,81 +1,73 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Hábitat Inmobiliaria</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    input, textarea { width: 100%; margin: 5px 0; padding: 8px; }
-    button { padding: 10px 15px; background: #1e90ff; color: white; border: none; cursor: pointer; }
-    .propiedad { border: 1px solid #ccc; padding: 10px; margin: 15px 0; }
-    img { max-width: 100%; height: auto; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Habitat Inmobiliaria</title>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
 </head>
 <body>
-  <h1>Hábitat Inmobiliaria</h1>
+  <h1>Habitat Inmobiliaria</h1>
 
   <h2>Agregar Propiedad</h2>
   <form id="formulario">
-    <input type="text" id="titulo" placeholder="Título" required><br>
-    <textarea id="descripcion" placeholder="Descripción" required></textarea><br>
-    <input type="number" id="precio" placeholder="Precio" required><br>
-    <input type="text" id="direccion" placeholder="Dirección"><br>
-    <input type="url" id="imagen_url" placeholder="URL de imagen"><br>
-    <button type="submit">Publicar</button>
+    <label>Título: <input type="text" id="titulo" required></label><br>
+    <label>Descripción: <textarea id="descripcion" required></textarea></label><br>
+    <label>Precio: <input type="number" id="precio" required></label><br>
+    <label>Distrito: <input type="text" id="distrito" required></label><br>
+    <button type="submit">Agregar</button>
   </form>
 
-  <h2>Propiedades disponibles</h2>
-  <div id="lista-propiedades"></div>
+  <h2>Propiedades Registradas</h2>
+  <table border="1" id="tabla">
+    <thead>
+      <tr>
+        <th>Título</th>
+        <th>Descripción</th>
+        <th>Precio</th>
+        <th>Distrito</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    const supabaseUrl = "https://paktfgnzospbxnbvmyzc.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    const SUPABASE_URL = "https://paktfgnzospbxnbvmyzc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function cargarPropiedades() {
-      const { data, error } = await supabase
-        .from('propiedades')
-        .select('*')
-        .order('fecha_publicacion', { ascending: false });
-
-      const contenedor = document.getElementById('lista-propiedades');
-      contenedor.innerHTML = '';
-      data.forEach(p => {
-        contenedor.innerHTML += `
-          <div class="propiedad">
-            <h3>${p.titulo}</h3>
-            <p>${p.descripcion}</p>
-            <strong>Precio: $${p.precio}</strong><br>
-            <em>${p.direccion}</em><br>
-            ${p.imagen_url ? `<img src="${p.imagen_url}" />` : ''}
-          </div>
-        `;
+      const { data, error } = await supabase.from('propiedades').select('*');
+      const tbody = document.querySelector("#tabla tbody");
+      tbody.innerHTML = "";
+      data.forEach(prop => {
+        const fila = `<tr>
+          <td>${prop.titulo}</td>
+          <td>${prop.descripcion}</td>
+          <td>${prop.precio}</td>
+          <td>${prop.distrito}</td>
+        </tr>`;
+        tbody.innerHTML += fila;
       });
     }
 
-    document.getElementById('formulario').addEventListener('submit', async e => {
+    document.getElementById("formulario").addEventListener("submit", async e => {
       e.preventDefault();
-      const nuevaPropiedad = {
-        titulo: document.getElementById('titulo').value,
-        descripcion: document.getElementById('descripcion').value,
-        precio: parseFloat(document.getElementById('precio').value),
-        direccion: document.getElementById('direccion').value,
-        imagen_url: document.getElementById('imagen_url').value,
-        fecha_publicacion: new Date().toISOString()
-      };
+      const titulo = document.getElementById("titulo").value;
+      const descripcion = document.getElementById("descripcion").value;
+      const precio = parseFloat(document.getElementById("precio").value);
+      const distrito = document.getElementById("distrito").value;
 
-      const { error } = await supabase.from('propiedades').insert([nuevaPropiedad]);
+      const { error } = await supabase.from('propiedades').insert([{ titulo, descripcion, precio, distrito }]);
       if (error) {
-        alert('Error al subir la propiedad: ' + error.message);
+        alert("Error al guardar");
+        console.error(error);
       } else {
-        alert('Propiedad publicada con éxito');
-        document.getElementById('formulario').reset();
+        alert("Propiedad agregada");
         cargarPropiedades();
+        document.getElementById("formulario").reset();
       }
     });
 
-    // Cargar al inicio
     cargarPropiedades();
   </script>
 </body>
