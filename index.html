@@ -2,25 +2,75 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hábitat Inmobiliaria</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 2rem;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    form {
+      max-width: 500px;
+      margin: 1rem auto;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #2980b9;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #3498db;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-  <h1>Bienvenido a Hábitat Inmobiliaria</h1>
-  <p>Tu propiedad ideal te está esperando.</p>
+  <h1>Hábitat Inmobiliaria</h1>
+  <h2>Tu propiedad ideal te está esperando</h2>
 
-  <h2>Registrar nueva propiedad</h2>
   <form id="formulario">
     <input type="text" id="titulo" placeholder="Título" required />
     <input type="text" id="descripcion" placeholder="Descripción" required />
     <input type="number" id="precio" placeholder="Precio" required />
     <input type="text" id="distrito" placeholder="Distrito" required />
-    <input type="text" id="tipo" placeholder="Tipo" required />
-    <button type="submit">Registrar propiedad</button>
+    <input type="text" id="tipo" placeholder="Tipo (casa, depa, terreno)" required />
+    <button type="submit">Registrar Propiedad</button>
   </form>
 
-  <h2>Propiedades registradas</h2>
-  <table border="1">
+  <table>
     <thead>
       <tr>
         <th>Título</th>
@@ -33,6 +83,57 @@
     <tbody id="lista-propiedades"></tbody>
   </table>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const supabaseUrl
+    const supabase = supabase.createClient(
+      'https://paktfgnzospbxnbvmyzc.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk'
+    );
+
+    async function cargarPropiedades() {
+      const { data, error } = await supabase.from("propiedades").select("*").order("id", { ascending: false });
+      if (error) {
+        console.error("Error cargando propiedades:", error);
+        return;
+      }
+
+      const lista = document.getElementById("lista-propiedades");
+      lista.innerHTML = "";
+      data.forEach(p => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${p.titulo}</td>
+          <td>${p.descripcion}</td>
+          <td>S/ ${p.precio}</td>
+          <td>${p.distrito}</td>
+          <td>${p.tipo}</td>
+        `;
+        lista.appendChild(fila);
+      });
+    }
+
+    document.getElementById("formulario").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("titulo").value.trim();
+      const descripcion = document.getElementById("descripcion").value.trim();
+      const precio = parseFloat(document.getElementById("precio").value);
+      const distrito = document.getElementById("distrito").value.trim();
+      const tipo = document.getElementById("tipo").value.trim();
+
+      const { error } = await supabase.from("propiedades").insert([
+        { titulo, descripcion, precio, distrito, tipo }
+      ]);
+
+      if (error) {
+        alert("Error al guardar: " + error.message);
+        return;
+      }
+
+      e.target.reset();
+      cargarPropiedades();
+    });
+
+    cargarPropiedades();
+  </script>
+</body>
+</html>
