@@ -3,9 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <title>Hábitat Inmobiliaria</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    input, textarea { width: 100%; margin: 5px 0; padding: 8px; }
+    button { padding: 10px 15px; background: #1e90ff; color: white; border: none; cursor: pointer; }
+    .propiedad { border: 1px solid #ccc; padding: 10px; margin: 15px 0; }
+    img { max-width: 100%; height: auto; }
+  </style>
 </head>
 <body>
-  <h1>Bienvenido a Hábitat Inmobiliaria</h1>
-  <p>Tu propiedad ideal te está esperando.</p>
+  <h1>Hábitat Inmobiliaria</h1>
+
+  <h2>Agregar Propiedad</h2>
+  <form id="formulario">
+    <input type="text" id="titulo" placeholder="Título" required><br>
+    <textarea id="descripcion" placeholder="Descripción" required></textarea><br>
+    <input type="number" id="precio" placeholder="Precio" required><br>
+    <input type="text" id="direccion" placeholder="Dirección"><br>
+    <input type="url" id="imagen_url" placeholder="URL de imagen"><br>
+    <button type="submit">Publicar</button>
+  </form>
+
+  <h2>Propiedades disponibles</h2>
+  <div id="lista-propiedades"></div>
+
+  <script>
+    const supabaseUrl = "https://paktfgnzospbxnbvmyzc.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk";
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function cargarPropiedades() {
+      const { data, error } = await supabase
+        .from('propiedades')
+        .select('*')
+        .order('fecha_publicacion', { ascending: false });
+
+      const contenedor = document.getElementById('lista-propiedades');
+      contenedor.innerHTML = '';
+      data.forEach(p => {
+        contenedor.innerHTML += `
+          <div class="propiedad">
+            <h3>${p.titulo}</h3>
+            <p>${p.descripcion}</p>
+            <strong>Precio: $${p.precio}</strong><br>
+            <em>${p.direccion}</em><br>
+            ${p.imagen_url ? `<img src="${p.imagen_url}" />` : ''}
+          </div>
+        `;
+      });
+    }
+
+    document.getElementById('formulario').addEventListener('submit', async e => {
+      e.preventDefault();
+      const nuevaPropiedad = {
+        titulo: document.getElementById('titulo').value,
+        descripcion: document.getElementById('descripcion').value,
+        precio: parseFloat(document.getElementById('precio').value),
+        direccion: document.getElementById('direccion').value,
+        imagen_url: document.getElementById('imagen_url').value,
+        fecha_publicacion: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from('propiedades').insert([nuevaPropiedad]);
+      if (error) {
+        alert('Error al subir la propiedad: ' + error.message);
+      } else {
+        alert('Propiedad publicada con éxito');
+        document.getElementById('formulario').reset();
+        cargarPropiedades();
+      }
+    });
+
+    // Cargar al inicio
+    cargarPropiedades();
+  </script>
 </body>
 </html>
