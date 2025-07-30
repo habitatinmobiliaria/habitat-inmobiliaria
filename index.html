@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hábitat Inmobiliaria</title>
   <style>
     body {
@@ -85,7 +85,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const supabase = supabase.createClient(
+    const supabase = window.supabase.createClient(
       'https://paktfgnzospbxnbvmyzc.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk'
     );
@@ -93,13 +93,14 @@
     async function cargarPropiedades() {
       const { data, error } = await supabase.from("propiedades").select("*").order("id", { ascending: false });
       if (error) {
-        console.error("Error cargando propiedades:", error);
+        console.error("Error al cargar propiedades:", error);
         return;
       }
 
       const lista = document.getElementById("lista-propiedades");
       lista.innerHTML = "";
-      data.forEach(p => {
+
+      data.forEach((p) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td>${p.titulo}</td>
