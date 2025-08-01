@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      background: #f5f5f5;
       margin: 0;
       padding: 2rem;
       color: #333;
@@ -16,18 +16,18 @@
       text-align: center;
       color: #2c3e50;
     }
-    form, .search-box {
+    form, .search {
       max-width: 600px;
       margin: 1rem auto;
       background: #fff;
       padding: 1rem;
       border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    input, button {
+    input, select, button {
       width: 100%;
       padding: 10px;
-      margin: 5px 0;
+      margin: 7px 0;
       border-radius: 5px;
       border: 1px solid #ccc;
     }
@@ -42,12 +42,12 @@
     }
     table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 2rem;
-      background: #fff;
+      border-collapse: collapse;
+      background: white;
     }
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       padding: 0.75rem;
       text-align: center;
     }
@@ -62,28 +62,25 @@
   </style>
 </head>
 <body>
+
   <h1>Hábitat Inmobiliaria</h1>
   <h2>Tu propiedad ideal te está esperando</h2>
 
-  <!-- FORMULARIO DE REGISTRO -->
+  <div class="search">
+    <input type="text" id="busqueda" placeholder="Buscar por distrito, tipo o título..." />
+    <button onclick="buscarPropiedades()">Buscar</button>
+  </div>
+
   <form id="formulario">
     <input type="text" id="titulo" placeholder="Título" required />
     <input type="text" id="descripcion" placeholder="Descripción" required />
     <input type="number" id="precio" placeholder="Precio (solo número)" required />
     <input type="text" id="distrito" placeholder="Distrito" required />
     <input type="text" id="tipo" placeholder="Tipo (casa, depa, terreno)" required />
-    <input type="file" id="imagen" accept="image/*" />
+    <input type="file" id="imagen" accept="image/*" required />
     <button type="submit">Registrar Propiedad</button>
   </form>
 
-  <!-- FORMULARIO DE BÚSQUEDA -->
-  <div class="search-box">
-    <input type="text" id="buscar" placeholder="Buscar por distrito o tipo..." />
-    <button onclick="buscarPropiedades()">Buscar</button>
-    <button onclick="cargarPropiedades()">Ver todas</button>
-  </div>
-
-  <!-- TABLA -->
   <table>
     <thead>
       <tr>
@@ -102,4 +99,74 @@
   <script>
     const supabase = window.supabase.createClient(
       'https://paktfgnzospbxnbvmyzc.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQ
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk'
+    );
+
+    async function cargarPropiedades(filtro = "") {
+      let query = supabase.from("propiedades").select("*").order("id", { ascending: false });
+      if (filtro) {
+        query = query.or(`titulo.ilike.%${filtro}%,distrito.ilike.%${filtro}%,tipo.ilike.%${filtro}%`);
+      }
+      const { data, error } = await query;
+
+      const lista = document.getElementById("lista-propiedades");
+      lista.innerHTML = "";
+
+      if (error) {
+        console.error("Error cargando propiedades:", error.message);
+        return;
+      }
+
+      data.forEach(p => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><img src="${p.imagen_url || ''}" alt="imagen" /></td>
+          <td>${p.titulo}</td>
+          <td>${p.descripcion}</td>
+          <td>S/ ${p.precio}</td>
+          <td>${p.distrito}</td>
+          <td>${p.tipo}</td>
+        `;
+        lista.appendChild(fila);
+      });
+    }
+
+    async function subirImagen(file) {
+      const nombre = `${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage.from('imagenes').upload(nombre, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('imagenes').getPublicUrl(nombre);
+      return urlData.publicUrl;
+    }
+
+    document.getElementById("formulario").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("titulo").value.trim();
+      const descripcion = document.getElementById("descripcion").value.trim();
+      const precio = parseFloat(document.getElementById("precio").value);
+      const distrito = document.getElementById("distrito").value.trim();
+      const tipo = document.getElementById("tipo").value.trim();
+      const imagen = document.getElementById("imagen").files[0];
+
+      try {
+        const imagen_url = await subirImagen(imagen);
+        const { error } = await supabase.from("propiedades").insert([
+          { titulo, descripcion, precio, distrito, tipo, imagen_url }
+        ]);
+        if (error) throw error;
+        e.target.reset();
+        cargarPropiedades();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+
+    function buscarPropiedades() {
+      const filtro = document.getElementById("busqueda").value.trim();
+      cargarPropiedades(filtro);
+    }
+
+    cargarPropiedades();
+  </script>
+</body>
+</html>
