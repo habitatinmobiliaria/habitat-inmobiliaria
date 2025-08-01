@@ -1,84 +1,170 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hábitat Inmobiliaria</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f2f2f2;
-      color: #333;
+      font-family: sans-serif;
+      margin: 2rem;
+      background-color: #f2f2f2;
     }
     h1, h2 {
-      text-align: center;
+      color: #2c3e50;
     }
-    form {
-      background: #fff;
-      padding: 20px;
-      margin: auto;
-      max-width: 600px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    label, input, textarea, select {
-      display: block;
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    input[type="submit"] {
-      background: #007BFF;
-      color: white;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-    }
-    .propiedad {
+    form, .resultados {
       background: white;
-      margin: 10px auto;
-      padding: 15px;
+      padding: 1rem;
       border-radius: 8px;
-      max-width: 600px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
     }
-    .propiedad img {
+    input, select, textarea, button {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      width: 100%;
+    }
+    .tarjeta {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 6px;
+      background: #fff;
+    }
+    img {
       max-width: 100%;
-      height: auto;
-      border-radius: 8px;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
   <h1>Hábitat Inmobiliaria</h1>
-  <h2>Registra una propiedad</h2>
-  <form id="propiedad-form">
-    <label>Título:</label>
-    <input type="text" id="titulo" required>
-    
-    <label>Descripción:</label>
-    <textarea id="descripcion" required></textarea>
-    
-    <label>Precio (solo números):</label>
-    <input type="number" id="precio" required>
-    
-    <label>Distrito:</label>
-    <input type="text" id="distrito" required>
+  <p>Tu propiedad ideal te está esperando.</p>
 
-    <label>Tipo (casa, departamento, terreno):</label>
-    <input type="text" id="tipo" required>
-
-    <label>Imagen:</label>
-    <input type="file" id="imagen" accept="image/*" required>
-    
-    <input type="submit" value="Guardar propiedad">
+  <h2>Registrar Propiedad</h2>
+  <form id="formulario">
+    <input type="text" id="titulo" placeholder="Título" required />
+    <textarea id="descripcion" placeholder="Descripción" required></textarea>
+    <input type="number" id="precio" placeholder="Precio (solo número)" required />
+    <input type="text" id="distrito" placeholder="Distrito" required />
+    <select id="tipo">
+      <option value="Departamento">Departamento</option>
+      <option value="Casa">Casa</option>
+      <option value="Terreno">Terreno</option>
+    </select>
+    <input type="file" id="imagen" accept="image/*" />
+    <button type="submit">Guardar propiedad</button>
   </form>
 
-  <h2>Propiedades registradas</h2>
-  <div id="lista-propiedades"></div>
+  <h2>Buscar Propiedades</h2>
+  <form id="busqueda">
+    <input type="text" id="filtroDistrito" placeholder="Distrito" />
+    <select id="filtroTipo">
+      <option value="">-- Tipo de propiedad --</option>
+      <option value="Departamento">Departamento</option>
+      <option value="Casa">Casa</option>
+      <option value="Terreno">Terreno</option>
+    </select>
+    <input type="number" id="precioMin" placeholder="Precio mínimo" />
+    <input type="number" id="precioMax" placeholder="Precio máximo" />
+    <button type="submit">Buscar</button>
+  </form>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script>
-    const supabase = supabase.createClient(
-      'https://paktfgnzospbxnbvmyzc.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6
+  <div class="resultados" id="resultados"></div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabaseUrl = "https://paktfgnzospbxnbvmyzc.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk";
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const formulario = document.getElementById("formulario");
+    const resultados = document.getElementById("resultados");
+
+    formulario.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("titulo").value;
+      const descripcion = document.getElementById("descripcion").value;
+      const precio = parseFloat(document.getElementById("precio").value);
+      const distrito = document.getElementById("distrito").value;
+      const tipo = document.getElementById("tipo").value;
+      const imagenInput = document.getElementById("imagen");
+
+      let imagenUrl = "";
+
+      if (imagenInput.files.length > 0) {
+        const file = imagenInput.files[0];
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const { data, error: uploadError } = await supabase.storage
+          .from("imagenes")
+          .upload(fileName, file);
+
+        if (uploadError) {
+          alert("Error al subir imagen: " + uploadError.message);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("imagenes")
+          .getPublicUrl(fileName);
+        imagenUrl = publicUrlData.publicUrl;
+      }
+
+      const { error } = await supabase.from("propiedades").insert([
+        {
+          titulo,
+          descripcion,
+          precio,
+          distrito,
+          tipo,
+          imagen: imagenUrl,
+        },
+      ]);
+
+      if (error) {
+        alert("Error al guardar: " + error.message);
+      } else {
+        alert("Propiedad guardada correctamente.");
+        formulario.reset();
+        cargarPropiedades(); // recargar después de guardar
+      }
+    });
+
+    document.getElementById("busqueda").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      cargarPropiedades();
+    });
+
+    async function cargarPropiedades() {
+      const filtroDistrito = document.getElementById("filtroDistrito").value;
+      const filtroTipo = document.getElementById("filtroTipo").value;
+      const precioMin = document.getElementById("precioMin").value;
+      const precioMax = document.getElementById("precioMax").value;
+
+      let query = supabase.from("propiedades").select("*");
+
+      if (filtroDistrito) query = query.ilike("distrito", `%${filtroDistrito}%`);
+      if (filtroTipo) query = query.eq("tipo", filtroTipo);
+      if (precioMin) query = query.gte("precio", precioMin);
+      if (precioMax) query = query.lte("precio", precioMax);
+
+      const { data, error } = await query;
+
+      if (error) {
+        resultados.innerHTML = "<p>Error al cargar propiedades.</p>";
+        return;
+      }
+
+      resultados.innerHTML = data.length
+        ? data
+            .map(
+              (p) => `
+            <div class="tarjeta">
+              <h3>${p.titulo}</h3>
+              <img src="${p.imagen}" alt="Imagen de ${p.titulo}" />
+              <p><strong>Precio:</strong> $${p.precio}</p>
+              <p><strong>Distrito:</strong> ${p.distrito}</p>
+              <p><strong>Tipo:</strong> ${p.tipo}</p>
+              <p>${p.descripcion}</p>
