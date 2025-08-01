@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background: #f4f4f4;
       margin: 0;
       padding: 2rem;
       color: #333;
@@ -16,7 +16,7 @@
       text-align: center;
       color: #2c3e50;
     }
-    form {
+    form, .search-box {
       max-width: 600px;
       margin: 1rem auto;
       background: #fff;
@@ -24,10 +24,10 @@
       border-radius: 10px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    input, button, select {
+    input, button {
       width: 100%;
       padding: 10px;
-      margin: 6px 0;
+      margin: 5px 0;
       border-radius: 5px;
       border: 1px solid #ccc;
     }
@@ -57,6 +57,7 @@
     }
     img {
       max-width: 100px;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -64,31 +65,25 @@
   <h1>Hábitat Inmobiliaria</h1>
   <h2>Tu propiedad ideal te está esperando</h2>
 
-  <!-- Formulario de búsqueda -->
-  <form id="formBusqueda">
-    <select id="buscarDistrito">
-      <option value="">Todos los Distritos</option>
-    </select>
-    <select id="buscarTipo">
-      <option value="">Todos los Tipos</option>
-      <option value="casa">Casa</option>
-      <option value="depa">Depa</option>
-      <option value="terreno">Terreno</option>
-    </select>
-    <button type="submit">Buscar</button>
-  </form>
-
-  <!-- Formulario de registro -->
+  <!-- FORMULARIO DE REGISTRO -->
   <form id="formulario">
     <input type="text" id="titulo" placeholder="Título" required />
     <input type="text" id="descripcion" placeholder="Descripción" required />
-    <input type="number" id="precio" placeholder="Precio" required />
+    <input type="number" id="precio" placeholder="Precio (solo número)" required />
     <input type="text" id="distrito" placeholder="Distrito" required />
     <input type="text" id="tipo" placeholder="Tipo (casa, depa, terreno)" required />
-    <input type="file" id="imagen" accept="image/*" required />
+    <input type="file" id="imagen" accept="image/*" />
     <button type="submit">Registrar Propiedad</button>
   </form>
 
+  <!-- FORMULARIO DE BÚSQUEDA -->
+  <div class="search-box">
+    <input type="text" id="buscar" placeholder="Buscar por distrito o tipo..." />
+    <button onclick="buscarPropiedades()">Buscar</button>
+    <button onclick="cargarPropiedades()">Ver todas</button>
+  </div>
+
+  <!-- TABLA -->
   <table>
     <thead>
       <tr>
@@ -107,103 +102,4 @@
   <script>
     const supabase = window.supabase.createClient(
       'https://paktfgnzospbxnbvmyzc.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk'
-    );
-
-    async function cargarPropiedades(filtros = {}) {
-      let query = supabase.from("propiedades").select("*").order("id", { ascending: false });
-
-      if (filtros.distrito) query = query.eq("distrito", filtros.distrito);
-      if (filtros.tipo) query = query.eq("tipo", filtros.tipo);
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error cargando propiedades:", error.message);
-        return;
-      }
-
-      const lista = document.getElementById("lista-propiedades");
-      lista.innerHTML = "";
-
-      const distritosUnicos = new Set();
-
-      data.forEach(p => {
-        distritosUnicos.add(p.distrito);
-
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${p.imagen_url ? `<img src="${p.imagen_url}" />` : ""}</td>
-          <td>${p.titulo}</td>
-          <td>${p.descripcion}</td>
-          <td>S/ ${p.precio}</td>
-          <td>${p.distrito}</td>
-          <td>${p.tipo}</td>
-        `;
-        lista.appendChild(fila);
-      });
-
-      // Llenar filtro distrito
-      const selectDistrito = document.getElementById("buscarDistrito");
-      selectDistrito.innerHTML = '<option value="">Todos los Distritos</option>';
-      distritosUnicos.forEach(d => {
-        const opt = document.createElement("option");
-        opt.value = d;
-        opt.textContent = d;
-        selectDistrito.appendChild(opt);
-      });
-    }
-
-    document.getElementById("formulario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const titulo = document.getElementById("titulo").value.trim();
-      const descripcion = document.getElementById("descripcion").value.trim();
-      const precio = parseFloat(document.getElementById("precio").value);
-      const distrito = document.getElementById("distrito").value.trim();
-      const tipo = document.getElementById("tipo").value.trim();
-      const imagen = document.getElementById("imagen").files[0];
-
-      let imagen_url = null;
-
-      if (imagen) {
-        const { data: storageData, error: storageError } = await supabase.storage
-          .from("imagenes")
-          .upload(`propiedades/${Date.now()}_${imagen.name}`, imagen, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (storageError) {
-          alert("Error al subir imagen: " + storageError.message);
-          return;
-        }
-
-        const { data: urlData } = supabase.storage.from("imagenes").getPublicUrl(storageData.path);
-        imagen_url = urlData.publicUrl;
-      }
-
-      const { error } = await supabase.from("propiedades").insert([
-        { titulo, descripcion, precio, distrito, tipo, imagen_url }
-      ]);
-
-      if (error) {
-        alert("Error al guardar: " + error.message);
-        return;
-      }
-
-      e.target.reset();
-      cargarPropiedades();
-    });
-
-    document.getElementById("formBusqueda").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const distrito = document.getElementById("buscarDistrito").value;
-      const tipo = document.getElementById("buscarTipo").value;
-      cargarPropiedades({ distrito, tipo });
-    });
-
-    cargarPropiedades();
-  </script>
-</body>
-</html>
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQ
