@@ -1,6 +1,110 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <
+  <meta charset="UTF-8">
+  <title>Hábitat Inmobiliaria</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
+    h1, h2 { color: #2c3e50; text-align: center; }
+    form, .resultados { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    input, select, textarea, button { width: 100%; margin: 8px 0; padding: 8px; }
+    .tarjeta { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 6px; background: #fff; }
+    img { max-width: 100%; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Hábitat Inmobiliaria</h1>
+  <h2>Registrar Propiedad</h2>
+  <form id="form-registro">
+    <input type="text" id="titulo" placeholder="Título" required />
+    <textarea id="descripcion" placeholder="Descripción" required></textarea>
+    <input type="number" id="precio" placeholder="Precio" required />
+    <input type="text" id="distrito" placeholder="Distrito" required />
+    <select id="tipo"><option value="Departamento">Departamento</option><option value="Casa">Casa</option><option value="Terreno">Terreno</option></select>
+    <input type="file" id="imagen" accept="image/*" />
+    <button type="submit">Guardar</button>
+  </form>
+
+  <h2>Buscar Propiedades</h2>
+  <form id="form-busqueda">
+    <input type="text" id="filtroDistrito" placeholder="Distrito (opcional)" />
+    <select id="filtroTipo"><option value="">-- Tipo --</option><option value="Departamento">Departamento</option><option value="Casa">Casa</option><option value="Terreno">Terreno</option></select>
+    <input type="number" id="precioMin" placeholder="Precio mínimo" />
+    <input type="number" id="precioMax" placeholder="Precio máximo" />
+    <button type="submit">Buscar</button>
+  </form>
+
+  <div class="resultados" id="resultados"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const supabase = supabase.createClient(
+    'https://paktfgnzospbxnbvmyzc.supabase.co',
+    'tu_anon_key'
+  );
+
+  async function cargarPropiedades() {
+    const fd = document.getElementById('filtroDistrito').value;
+    const ft = document.getElementById('filtroTipo').value;
+    const pm = document.getElementById('precioMin').value;
+    const px = document.getElementById('precioMax').value;
+
+    let query = supabase.from('propiedades').select('*');
+    if (fd) query = query.ilike('distrito', `%${fd}%`);
+    if (ft) query = query.eq('tipo', ft);
+    if (pm) query = query.gte('precio', pm);
+    if (px) query = query.lte('precio', px);
+
+    const { data, error } = await query;
+    const res = document.getElementById('resultados');
+    res.innerHTML = '';
+    if (error) return res.innerHTML = `<p>Error: ${error.message}</p>`;
+    if (!data.length) return res.innerHTML = '<p>No se encontraron propiedades.</p>';
+
+    data.forEach(p => {
+      res.innerHTML += `
+        <div class="tarjeta">
+          <h3>${p.titulo}</h3>
+          <img src="${p.imagen || ''}" alt="" />
+          <p><strong>Precio:</strong> ${p.precio}</p>
+          <p><strong>Distrito:</strong> ${p.distrito}</p>
+          <p><strong>Tipo:</strong> ${p.tipo}</p>
+          <p>${p.descripcion}</p>
+        </div>`;
+    });
+  }
+
+  document.getElementById('form-registro').addEventListener('submit', async e => {
+    e.preventDefault();
+    const t = document.getElementById('titulo').value;
+    const d = document.getElementById('descripcion').value;
+    const p = parseFloat(document.getElementById('precio').value);
+    const dis = document.getElementById('distrito').value;
+    const tipo = document.getElementById('tipo').value;
+    let imgUrl = '';
+    const file = document.getElementById('imagen').files[0];
+    if (file) {
+      const fn = `${Date.now()}-${file.name}`;
+      const { error: ue } = await supabase.storage.from('imagenes').upload(fn, file);
+      if (!ue) {
+        const { data: pu } = supabase.storage.from('imagenes').getPublicUrl(fn);
+        imgUrl = pu.publicUrl;
+      }
+    }
+    const { error } = await supabase.from('propiedades').insert([{ titulo: t, descripcion: d, precio: p, distrito: dis, tipo, imagen: imgUrl }]);
+    if (error) return alert(error.message);
+    alert('Guardado ok');
+    e.target.reset();
+    cargarPropiedades();
+  });
+
+  document.getElementById('form-busqueda').addEventListener('submit', e => {
+    e.preventDefault();
+    cargarPropiedades();
+  });
+
+  cargarPropiedades();
+</script>
+</body>
+</html>
