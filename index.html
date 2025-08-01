@@ -1,191 +1,84 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Hábitat Inmobiliaria</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #eef2f5;
-      padding: 2rem;
+      padding: 20px;
+      background: #f2f2f2;
+      color: #333;
     }
-    h1 {
+    h1, h2 {
       text-align: center;
-      color: #2c3e50;
     }
     form {
-      max-width: 500px;
-      margin: 0 auto 2rem auto;
-      background-color: #fff;
-      padding: 1rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: #fff;
+      padding: 20px;
+      margin: auto;
+      max-width: 600px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input, button {
+    label, input, textarea, select {
+      display: block;
       width: 100%;
-      margin-bottom: 1rem;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      margin-bottom: 10px;
     }
-    button {
-      background-color: #2980b9;
+    input[type="submit"] {
+      background: #007BFF;
       color: white;
-      font-weight: bold;
       border: none;
+      padding: 10px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #3498db;
+    .propiedad {
+      background: white;
+      margin: 10px auto;
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 600px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      margin-top: 2rem;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 0.75rem;
-      text-align: center;
-      vertical-align: top;
-    }
-    th {
-      background-color: #2980b9;
-      color: white;
-    }
-    .galeria {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      justify-content: center;
-    }
-    .galeria img {
-      width: 80px;
-      height: 60px;
-      object-fit: cover;
-      border-radius: 4px;
+    .propiedad img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
   <h1>Hábitat Inmobiliaria</h1>
+  <h2>Registra una propiedad</h2>
+  <form id="propiedad-form">
+    <label>Título:</label>
+    <input type="text" id="titulo" required>
+    
+    <label>Descripción:</label>
+    <textarea id="descripcion" required></textarea>
+    
+    <label>Precio (solo números):</label>
+    <input type="number" id="precio" required>
+    
+    <label>Distrito:</label>
+    <input type="text" id="distrito" required>
 
-  <form id="formulario">
-    <input type="text" id="titulo" placeholder="Título" required />
-    <input type="text" id="descripcion" placeholder="Descripción" required />
-    <input type="number" id="precio" placeholder="Precio en soles" required />
-    <input type="text" id="distrito" placeholder="Distrito" required />
-    <input type="text" id="tipo" placeholder="Tipo (casa, depa, terreno)" required />
-    <input type="file" id="imagenes" accept="image/*" multiple required />
-    <button type="submit">Registrar Propiedad</button>
+    <label>Tipo (casa, departamento, terreno):</label>
+    <input type="text" id="tipo" required>
+
+    <label>Imagen:</label>
+    <input type="file" id="imagen" accept="image/*" required>
+    
+    <input type="submit" value="Guardar propiedad">
   </form>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Imágenes</th>
-        <th>Título</th>
-        <th>Descripción</th>
-        <th>Precio</th>
-        <th>Distrito</th>
-        <th>Tipo</th>
-      </tr>
-    </thead>
-    <tbody id="lista-propiedades"></tbody>
-  </table>
+  <h2>Propiedades registradas</h2>
+  <div id="lista-propiedades"></div>
 
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-    const supabase = createClient(
-      "https://paktfgnzospbxnbvmyzc.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6MjA2OTQ3MzgyNn0.GAxrht670Nc7IPd-3aikRa-eo5uTwVy1sbuqsbwUcQk"
-    );
-
-    async function cargarPropiedades() {
-      const { data, error } = await supabase
-        .from("propiedades")
-        .select("*")
-        .order("id", { ascending: false });
-
-      if (error) {
-        console.error("Error cargando propiedades:", error.message);
-        return;
-      }
-
-      const lista = document.getElementById("lista-propiedades");
-      lista.innerHTML = "";
-
-      data.forEach(p => {
-        const imagenesHtml = p.imagenes?.length
-          ? `<div class="galeria">${p.imagenes.map(url => `<img src="${url}" />`).join("")}</div>`
-          : "Sin imágenes";
-
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${imagenesHtml}</td>
-          <td>${p.titulo}</td>
-          <td>${p.descripcion}</td>
-          <td>S/ ${p.precio}</td>
-          <td>${p.distrito}</td>
-          <td>${p.tipo}</td>
-        `;
-        lista.appendChild(fila);
-      });
-    }
-
-    document.getElementById("formulario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const titulo = document.getElementById("titulo").value.trim();
-      const descripcion = document.getElementById("descripcion").value.trim();
-      const precio = parseFloat(document.getElementById("precio").value);
-      const distrito = document.getElementById("distrito").value.trim();
-      const tipo = document.getElementById("tipo").value.trim();
-      const archivos = document.getElementById("imagenes").files;
-
-      if (!archivos.length) {
-        alert("Debes seleccionar al menos una imagen.");
-        return;
-      }
-
-      if (isNaN(precio)) {
-        alert("El precio debe ser numérico.");
-        return;
-      }
-
-      const urls = [];
-      for (let archivo of archivos) {
-        const nombreArchivo = `${Date.now()}_${archivo.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("imagenes")
-          .upload(nombreArchivo, archivo);
-
-        if (uploadError) {
-          alert("Error al subir imagen: " + uploadError.message);
-          return;
-        }
-
-        const url = `https://paktfgnzospbxnbvmyzc.supabase.co/storage/v1/object/public/imagenes/${nombreArchivo}`;
-        urls.push(url);
-      }
-
-      const { error } = await supabase.from("propiedades").insert([
-        { titulo, descripcion, precio, distrito, tipo, imagenes: urls }
-      ]);
-
-      if (error) {
-        alert("Error al guardar: " + error.message);
-        return;
-      }
-
-      e.target.reset();
-      cargarPropiedades();
-    });
-
-    cargarPropiedades();
-  </script>
-</body>
-</html>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = supabase.createClient(
+      'https://paktfgnzospbxnbvmyzc.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBha3RmZ256b3NwYnhuYnZteXpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4OTc4MjYsImV4cCI6
